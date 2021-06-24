@@ -56,3 +56,49 @@ exports.getAllSauces = (req, res, next) => {
         .then(sauces => res.status(200).json(sauces))
         .catch(error => res.status(400).json({ error }));
 };
+
+//Like et Dislike des Sauces
+exports.likeSauce = (req, res, next) => {
+    const userId = req.body.userId;
+    const like = req.body.like;
+    const sauceId = req.params.id;
+    Sauce.findOne({ _id: sauceId })
+        .then(sauce => {
+            const newValues = {
+                usersLiked: sauce.usersLiked,
+                usersDisliked: sauce.usersDisliked,
+                likes: 0,
+                dislikes: 0
+            }
+            //Sauce Liked
+            if (like == 1) {
+                newValues.usersLiked.push(userId);
+            } 
+            //Sauce Disliked
+            else if (like == -1) {
+                newValues.usersDisliked.push(userId);
+            } 
+            //ANNulation de Like et Dislike
+            else {
+                //Annulation d'un Like
+                if (newValues.usersLiked.includes(userId)) {
+                    const index = newValues.usersLiked.indexOf(userId);
+                    newValues.usersLiked.splice(index, 1);
+                } 
+                //Annulation d'un Dislike
+                else {
+                    const index = newValues.usersDisliked.indexOf(userId);
+                    newValues.usersDisliked.splice(index, 1);
+                }
+            }
+            // Mise à jour des Likes et Dislikes
+            newValues.likes = newValues.usersLiked.length;
+            newValues.dislikes = newValues.usersDisliked.length;
+
+            // Mise à jour de la Sauce
+            Sauce.updateOne({ _id: sauceId }, newValues )
+                .then(() => res.status(200).json({ message: 'Sauce notée !' }))
+                .catch(error => res.status(400).json({ error }))  
+        })
+        .catch(error => res.status(500).json({ error }));
+}
